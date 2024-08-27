@@ -1,10 +1,14 @@
 package com.banking.business.Service;
 
 import io.apiwiz.compliance.config.EnableCompliance;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,7 +16,8 @@ import java.util.Map;
 @EnableCompliance
 @RequestMapping("/v1/business-payouts/api/1.0/payout-links")
 class PayoutLinksService {
-
+@Value("${api.post.create.payment:null}")
+private String createPayment ;
 @GetMapping
 public ResponseEntity<?> getPayoutLinks() {
     List<Map<String, Object>> transactions = List.of(
@@ -103,7 +108,7 @@ public ResponseEntity<?> getPayoutLinkById(@PathVariable String payoutLinkId) {
 }
 
 @PostMapping
-public ResponseEntity<?> createPayoutLink(@RequestBody Map<String, Object> requestData) {
+public ResponseEntity<?> createPayoutLink(@RequestBody Map<String, Object> requestData,  @RequestHeader(value = "enableTracing",required = false)boolean enableTracing) throws URISyntaxException {
     Map<String, Object> transaction = Map.ofEntries(
             Map.entry("counterparty_name", "John Smith"),
             Map.entry("save_counterparty", false),
@@ -120,6 +125,25 @@ public ResponseEntity<?> createPayoutLink(@RequestBody Map<String, Object> reque
             Map.entry("expiry_period", "P3D"),
             Map.entry("transfer_reason_code", "property_rental")
     );
+    if(enableTracing){
+        RestTemplate restTemplate = new RestTemplate();
+        Map<String, Object> requestPayload = new LinkedHashMap<String, Object>() {{
+            put("request_id", "0d14fb2a-4079-4187-89ea-d915e16b4a1d");
+            put("account_id", "b7ec67d3-5af1-42c8-bece-3d28nlmo894d");
+            put("receiver", new LinkedHashMap<String, Object>() {{
+                put("counterparty_id", "a1d2a938-c69b-4f08-b15f-bfc1b54b69d1");
+                put("account_id", "417433c2-d930-47a0-ad34-a88b01939ce5");
+            }});
+            put("amount", 10);
+            put("currency", "EUR");
+            put("charge_bearer", "shared");
+            put("reference", "To John Doe");
+        }};
+        HttpHeaders headers  = new HttpHeaders();
+        headers.add("enableTracing",String.valueOf(Boolean.TRUE));
+        HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(requestPayload, headers);
+        restTemplate.exchange(new URI(createPayment), HttpMethod.POST, httpEntity, Object.class);
+    }
     return new ResponseEntity<>(transaction, HttpStatus.CREATED);
 }
 

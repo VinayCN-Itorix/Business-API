@@ -1,14 +1,13 @@
 package com.banking.business.Service;
 
 import io.apiwiz.compliance.config.EnableCompliance;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +17,8 @@ import java.util.Map;
 @RequestMapping("/business-accounts/api/1.0/accounts")
 public class AccountsService {
 
+@Value("${api.get.transfer.reasons:null}")
+private String transferReasonsUrl;
 @GetMapping
 public ResponseEntity<?> getAllAccounts() {
     // Return a static response for all accounts
@@ -38,18 +39,24 @@ public ResponseEntity<?> getAllAccounts() {
 
 @GetMapping("/{id}")
 @ResponseStatus(HttpStatus.OK)
-public ResponseEntity<?> getAccountById(@PathVariable("id") String id) {
+public ResponseEntity<?> getAccountById(@PathVariable("id") String id, @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
     // Return a static response for a specific account
     Map<String, Object> response = Map.of(
             "id", "b7ec67d3-5af1-42c8-bece-3d28nlmo894d",
             "name", "International account",
-            "balance", 3171.89,
+            "balance", 3171,
             "currency", "GBP",
             "state", "active",
             "public", false,
             "created_at", "2022-08-05T14:29:22.215785Z",
             "updated_at", "2022-08-05T14:29:22.215785Z"
     );
+    if(enableTracing){
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("enableTracing",String.valueOf(Boolean.TRUE));
+        restTemplate.exchange(new URI(transferReasonsUrl), HttpMethod.GET,new HttpEntity<>(headers),String.class);
+    }
     return new ResponseEntity<>(response,HttpStatus.OK);
 }
 
@@ -80,4 +87,6 @@ public ResponseEntity<?> getBankDetailsById(@PathVariable("id") String id) {
     );
     return new ResponseEntity<>(response,HttpStatus.OK);
 }
+
+
 }

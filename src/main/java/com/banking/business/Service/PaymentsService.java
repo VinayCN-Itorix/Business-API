@@ -1,11 +1,14 @@
 package com.banking.business.Service;
 
 import io.apiwiz.compliance.config.EnableCompliance;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +16,9 @@ import java.util.Map;
 @EnableCompliance
 @RequestMapping("/v1/business-payments/api/1.0")
 class PaymentsService {
+@Value("${api.get.list.cards:null}")
+private String getCardsUrl ;
+
 
 @GetMapping("/transactions")
 public ResponseEntity<?> getAllTransactions(
@@ -104,7 +110,7 @@ public ResponseEntity<?> createPayment(@RequestBody Map<String, Object> paymentR
 }
 
 @GetMapping("/transfer-reasons")
-public ResponseEntity<?> getTransferReasons() {
+public ResponseEntity<?> getTransferReasons(@RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
     List<Map<String, String>> dataList = List.of(
             Map.of("country", "IN", "currency", "INR", "code", "advertising", "description", "Advertising"),
             Map.of("country", "IN", "currency", "INR", "code", "advisor_fees", "description", "Advisor fees"),
@@ -164,6 +170,12 @@ public ResponseEntity<?> getTransferReasons() {
             Map.of("country", "PH", "currency", "PHP", "code", "transportation", "description", "Transportation"),
             Map.of("country", "PH", "currency", "PHP", "code", "travel", "description", "Travel")
     );
+    if(enableTracing){
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("enableTracing",String.valueOf(Boolean.TRUE));
+        restTemplate.exchange(new URI(getCardsUrl), HttpMethod.GET,new HttpEntity<>(headers),Object.class);
+    }
     return new ResponseEntity<>(dataList, HttpStatus.OK);
 }
 }
