@@ -1,6 +1,7 @@
 package com.banking.business.Service;
 
 import io.apiwiz.compliance.config.EnableCompliance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +19,8 @@ import java.util.Map;
 class PaymentsService {
 @Value("${api.get.list.cards:null}")
 private String getCardsUrl ;
-
+@Autowired
+private RestTemplate restTemplate;
 
 @GetMapping("/transactions")
 public ResponseEntity<?> getAllTransactions(
@@ -110,7 +112,8 @@ public ResponseEntity<?> createPayment(@RequestBody Map<String, Object> paymentR
 }
 
 @GetMapping("/transfer-reasons")
-public ResponseEntity<?> getTransferReasons(@RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
+public ResponseEntity<?> getTransferReasons(@RequestHeader(value = "enableTracing",required = false) boolean enableTracing,
+                                            @RequestHeader(value = "deviate", required = false) boolean deviate) throws URISyntaxException {
     List<Map<String, String>> dataList = List.of(
             Map.of("country", "IN", "currency", "INR", "code", "advertising", "description", "Advertising"),
             Map.of("country", "IN", "currency", "INR", "code", "advisor_fees", "description", "Advisor fees"),
@@ -171,9 +174,9 @@ public ResponseEntity<?> getTransferReasons(@RequestHeader(value = "enableTracin
             Map.of("country", "PH", "currency", "PHP", "code", "travel", "description", "Travel")
     );
     if(enableTracing){
-        RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.add("enableTracing",String.valueOf(Boolean.TRUE));
+        headers.add("deviate",String.valueOf(deviate));
         restTemplate.exchange(new URI(getCardsUrl), HttpMethod.GET,new HttpEntity<>(headers),Object.class);
     }
     return new ResponseEntity<>(dataList, HttpStatus.OK);

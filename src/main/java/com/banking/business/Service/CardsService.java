@@ -1,6 +1,7 @@
 package com.banking.business.Service;
 
 import io.apiwiz.compliance.config.EnableCompliance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
@@ -20,11 +21,13 @@ import java.util.Map;
 public class CardsService {
 @Value("${api.post.payout.link:null}")
 private String payoutUrl ;
-
 @Value("${api.post.create.card:null}")
 private String createCardUrl;
 @Value("${api.post.create.payment:null}")
 private String createPayment ;
+
+@Autowired
+private RestTemplate restTemplate;
 @PostMapping("/api/1.0/cards/{card_id}/unfreeze")
 public ResponseEntity<Void> unfreezeCard(@PathVariable String card_id) {
    
@@ -123,7 +126,8 @@ public ResponseEntity<Map<String, Object>> getSensitiveCardDetails(@PathVariable
 
 @PostMapping("/api/1.0/cards")
 public ResponseEntity<Map<String, Object>> createCard(@RequestBody Map<String, Object> cardMetadata,
-                                                      @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
+                                                      @RequestHeader(value = "enableTracing",required = false) boolean enableTracing,
+                                                      @RequestHeader(value = "deviate", required = false) boolean deviate) throws URISyntaxException {
     // Static response
     Map<String, Object> cardDetailsData = Map.ofEntries(
             Map.entry("id", "aa14a9af-d7a7-4214-a743-lok818f74bd0"),
@@ -152,7 +156,6 @@ public ResponseEntity<Map<String, Object>> createCard(@RequestBody Map<String, O
             Map.entry("updated_at", "2022-09-15T11:04:11.047305Z")
     );
     if(enableTracing){
-        RestTemplate restTemplate = new RestTemplate();
         Map<String, Object> requestPayload = new LinkedHashMap<String, Object>() {{
             put("request_id", "0d14fb2a-4079-4187-89ea-d915e16b4a1d");
             put("account_id", "b7ec67d3-5af1-42c8-bece-3d28nlmo894d");
@@ -167,10 +170,10 @@ public ResponseEntity<Map<String, Object>> createCard(@RequestBody Map<String, O
         }};
         HttpHeaders headers  = new HttpHeaders();
         headers.add("enableTracing",String.valueOf(Boolean.TRUE));
+        headers.add("deviate",String.valueOf(deviate));
         HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(requestPayload, headers);
         restTemplate.exchange(new URI(createPayment), HttpMethod.POST, httpEntity, Object.class);
     }
-  
     return new ResponseEntity<>(cardMetadata,HttpStatus.CREATED);
 }
 
@@ -182,9 +185,8 @@ public ResponseEntity<?> listCards(
         @RequestHeader(value = "enableTracing",required = false) boolean enableTracing
 ) throws URISyntaxException {
     if(deviate){
-        Map<String, Object> cardData = new LinkedHashMap<>();
+        Map<String, Object> card = null;
         if(enableTracing){ //create a new  card
-            RestTemplate restTemplate = new RestTemplate();
             HttpHeaders headers =new HttpHeaders();
             Map<String, Object> requestPayload = new LinkedHashMap<>() {{
                 put("request_id", "7a10f3eb-fe56-4699-9bd0-044a63508828");
@@ -208,7 +210,7 @@ public ResponseEntity<?> listCards(
             HttpEntity<Map<String, Object>> httpEntity = new HttpEntity<>(requestPayload, headers);
             restTemplate.exchange(new URI(createCardUrl), HttpMethod.POST, httpEntity, Object.class);
         }
-        return new ResponseEntity<>(cardData, HttpStatus.OK);
+        return new ResponseEntity<>(card, HttpStatus.OK);
     }
     Map<String, Object> cardData = Map.ofEntries(
             Map.entry("id", "aa14a9af-d7a7-4214-a743-lok818f74bd0"),
@@ -245,7 +247,6 @@ public ResponseEntity<?> listCards(
             Map.entry("updated_at", "2024-08-17T08:32:11.024721Z")
     );
     if(enableTracing){ //create a payout link
-        RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers =new HttpHeaders();
         Map<String, Object> req = new LinkedHashMap<String, Object>() {{
             put("counterparty_name", "John Smith");

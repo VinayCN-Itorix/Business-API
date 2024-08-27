@@ -1,6 +1,7 @@
 package com.banking.business.Service;
 
 import io.apiwiz.compliance.config.EnableCompliance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,8 @@ import java.util.Map;
 class PayoutLinksService {
 @Value("${api.post.create.payment:null}")
 private String createPayment ;
+@Autowired
+private RestTemplate restTemplate;
 @GetMapping
 public ResponseEntity<?> getPayoutLinks() {
     List<Map<String, Object>> transactions = List.of(
@@ -126,7 +129,6 @@ public ResponseEntity<?> createPayoutLink(@RequestBody Map<String, Object> reque
             Map.entry("transfer_reason_code", "property_rental")
     );
     if(enableTracing){
-        RestTemplate restTemplate = new RestTemplate();
         Map<String, Object> requestPayload = new LinkedHashMap<String, Object>() {{
             put("request_id", "0d14fb2a-4079-4187-89ea-d915e16b4a1d");
             put("account_id", "b7ec67d3-5af1-42c8-bece-3d28nlmo894d");

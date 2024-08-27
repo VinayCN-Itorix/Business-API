@@ -1,6 +1,7 @@
 package com.banking.business.Service;
 
 import io.apiwiz.compliance.config.EnableCompliance;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,8 @@ public class AccountsService {
 
 @Value("${api.get.transfer.reasons:null}")
 private String transferReasonsUrl;
+@Autowired
+private RestTemplate restTemplate;
 @GetMapping
 public ResponseEntity<?> getAllAccounts() {
     // Return a static response for all accounts
@@ -39,7 +42,8 @@ public ResponseEntity<?> getAllAccounts() {
 
 @GetMapping("/{id}")
 @ResponseStatus(HttpStatus.OK)
-public ResponseEntity<?> getAccountById(@PathVariable("id") String id, @RequestHeader(value = "enableTracing",required = false) boolean enableTracing) throws URISyntaxException {
+public ResponseEntity<?> getAccountById(@PathVariable("id") String id, @RequestHeader(value = "enableTracing",required = false) boolean enableTracing,
+                                        @RequestHeader(value = "deviate", required = false) boolean deviate) throws URISyntaxException {
     // Return a static response for a specific account
     Map<String, Object> response = Map.of(
             "id", "b7ec67d3-5af1-42c8-bece-3d28nlmo894d",
@@ -52,9 +56,9 @@ public ResponseEntity<?> getAccountById(@PathVariable("id") String id, @RequestH
             "updated_at", "2022-08-05T14:29:22.215785Z"
     );
     if(enableTracing){
-        RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.add("enableTracing",String.valueOf(Boolean.TRUE));
+        headers.add("deviate",String.valueOf(deviate));
         restTemplate.exchange(new URI(transferReasonsUrl), HttpMethod.GET,new HttpEntity<>(headers),String.class);
     }
     return new ResponseEntity<>(response,HttpStatus.OK);
